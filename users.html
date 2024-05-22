@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Responsive Users</title>
+  <style>
+    /* Style for the title */
+    h1 {
+      font-size: 2rem;
+      text-align: center;
+    }
+
+    /* Style for the table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 auto;
+    }
+
+    th,
+    td {
+      padding: 8px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    .table-div {
+      margin: 0 10%;
+    }
+
+    /* modal */
+
+    /* The Modal (background) */
+    .modal {
+      display: none;
+      /* Hidden by default */
+      position: fixed;
+      /* Stay in place */
+      z-index: 1;
+      /* Sit on top */
+      left: 0;
+      top: 0;
+      width: 100%;
+      /* Full width */
+      height: 100%;
+      /* Full height */
+      overflow: auto;
+      /* Enable scroll if needed */
+      background-color: rgb(0, 0, 0);
+      /* Fallback color */
+      background-color: rgba(0, 0, 0, 0.4);
+      /* Black w/ opacity */
+    }
+
+    /* Modal Content/Box */
+    .modal-content {
+      background-color: #fefefe;
+      margin: 15% auto;
+      /* 15% from the top and centered */
+      padding: 20px;
+      border: 1px solid #888;
+      width: 30%;
+      /* Could be more or less, depending on screen size */
+    }
+
+    /* The Close Button */
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .close:hover,
+    .close:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Users</h1>
+  <!-- The Modal -->
+  <div id="myModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <p>Enter date and time</p>
+      <input type="date">
+      <p></p>
+      <input type="time">
+      <p></p>
+      <!-- <a href="https://wa.me/${number}?text=Thank%20You,%20Your%20appointment%20is%20finalized!!">Send Message</a> -->
+      <button class="send">Send Message</button>
+    </div>
+  </div>
+
+  <div style="overflow-x: auto" class="table-div">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Number</th>
+          <th class="birth">Appointment Date</th>
+          <th class="birth">Appointment Time</th>
+          <th class="birth"></th>
+          <th class="birth"></th>
+        </tr>
+      </thead>
+      <tbody id="userTableBody"></tbody>
+    </table>
+  </div>
+</body>
+
+<script type="module">
+  let number = 9372329966;
+  var modal = document.getElementById("myModal");
+
+  // Get the <span> element that closes the modal
+  var span = document.getElementsByClassName("close")[0];
+
+  // When the user clicks on <span> (x), close the modal
+  span.onclick = function () {
+    modal.style.display = "none";
+  }
+
+  // When the user clicks anywhere outside of the modal, close it
+  window.onclick = function (event) {
+    if (event.target == modal) {
+      modal.style.display = "none";
+    }
+  }
+
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+  import {
+    getDatabase,
+    onValue,
+    ref,
+    set,
+    get,
+    child,
+  } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-database.js";
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyAr_e6tSKTx3kUaTt4VSW-Yl9MB8jAd0CI",
+    authDomain: "uptown-e18f2.firebaseapp.com",
+    projectId: "uptown-e18f2",
+    storageBucket: "uptown-e18f2.appspot.com",
+    messagingSenderId: "215634717165",
+    appId: "1:215634717165:web:3cad47469b0fed4b96dfe4",
+  };
+
+  let sorted = false;
+
+  let users = [];
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  function getUsers() {
+    const usersRef = ref(db, "user");
+
+    onValue(usersRef, (snapshot) => {
+      users = snapshot.val();
+      if (users) {
+        const tbody = document.querySelector("tbody");
+        tbody.innerHTML = ""; // Clear the table body before populating
+        Object.keys(users).forEach((userId) => {
+          const user = users[userId];
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${user.username}</td>
+            <td>${user.num}</td>
+            <td>${user.dob.split("-")[2] + "-" + user.dob.split("-")[1]}</td>
+            <td>${user.time}</td>
+            <td><a href="https://wa.me/${user.num}?text=Thank%20You,%20Your%20appointment%20is%20finalized!!">Ok</a></td>
+            <td><a href="https://wa.me/${user.num}?text=Sorry,%20we%20are%20full%20today,%20can%20u%20try%20a%20different%20appointment">Cancel</a></td>
+            <td><button class="delay-btn">Delay</button></td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        // Attach event listeners to delay buttons
+        document.querySelectorAll(".delay-btn").forEach(button => {
+          button.addEventListener("click", handleDelay);
+        });
+
+        document.querySelectorAll(".send")[0].addEventListener("click", handleSend);
+        ;
+
+
+      } else {
+        console.log("No users found");
+      }
+    });
+  }
+
+  function handleDelay(e) {
+    console.log("Delay button clicked");
+    modal.style.display = "block";
+    number = e.target.parentElement.parentElement.children[1].textContent;
+  }
+  let handleSend = () => {
+    console.log("hi");
+    // window.href = `https://wa.me/${number}?text=Sorry,%20we%20are%20full%20today,%20can%20u%20try%20a%20different%20appointment`;
+    location.assign(`https://wa.me/${number}?text=Sorry,%20we%20are%20full%20today,%20can%20u%20try%20a%20different%20appointment`);
+  }
+
+  document.querySelector(".birth").addEventListener("click", () => {
+    let data = users;
+    Object.keys(users).forEach((i) => (users[i].dob = users[i].dob.slice(5)));
+
+    const sortedData = Object.values(data).sort((a, b) => {
+      const [aMonth, aDay] = a.dob.split("-").map(Number);
+      const [bMonth, bDay] = b.dob.split("-").map(Number);
+
+      if (aMonth !== bMonth) {
+        return aMonth - bMonth;
+      } else {
+        return aDay - bDay;
+      }
+    });
+
+    let todayDate = new Date().getDate();
+    let todayMonth = new Date().getMonth() + 1;
+
+    if (sorted) {
+      return;
+      document.querySelector("tbody").innerHTML = "";
+      data.forEach((user) => {
+        tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${user.username}</td>
+          <td>${user.num}</td>
+          <td>${user.dob.split("-")[1] + "-" + user.dob.split("-")[0]}</td>
+        `;
+        document.querySelector("tbody").append(tr);
+      });
+      sorted = false;
+      return;
+    } else {
+      for (let i = 0; i < sortedData.length; i++) {
+        if (sortedData[i].dob.split("-")[0] >= todayMonth) {
+          if (sortedData[i].dob.split("-")[1] >= todayDate) {
+            let newArr = sortedData.slice(i).concat(sortedData.slice(0, i));
+            document.querySelector("tbody").innerHTML = "";
+            newArr.forEach((user) => {
+              tr = document.createElement("tr");
+              tr.innerHTML = `
+                <td>${user.username}</td>
+                <td>${user.num}</td>
+                <td>${user.dob.split("-")[1] + "-" + user.dob.split("-")[0]}</td>
+              `;
+              document.querySelector("tbody").append(tr);
+            });
+            sorted = true;
+            return;
+          }
+        }
+      }
+      sorted = true;
+    }
+  });
+
+  setTimeout(() => {
+    getUsers();
+  }, 500);
+</script>
+
+</html>
